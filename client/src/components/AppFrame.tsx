@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import AccessWelcome from "@/components/AccessWelcome";
+import GuestBanner from "@/components/GuestBanner";
+import JourneyProgress, { type JourneyStage } from "@/components/JourneyProgress";
+import ReportFormGuide from "@/components/ReportFormGuide";
 import { GUEST_MODE_STORAGE_KEY, hasChosenGuestMode, shouldShowAccessWelcome } from "@/lib/entry-mode";
 
 type AppFrameProps = { children: React.ReactNode };
@@ -35,6 +38,11 @@ export default function AppFrame({ children }: AppFrameProps) {
     setGuestMode(true);
   };
   const showAccessWelcome = !loading && shouldShowAccessWelcome(isAuthenticated, guestMode ? "guest" : null);
+  const journeyStage: JourneyStage | null =
+    location === "/search" ? "discover" :
+    location === "/reports/new" ? "report" :
+    location === "/my-reports" || location === "/notifications" || location.startsWith("/reports/") ? "match" :
+    null;
 
   const navLinks = navigation.map(item => {
     const Icon = item.icon;
@@ -124,6 +132,10 @@ export default function AppFrame({ children }: AppFrameProps) {
           </div>
         )}
       </header>
+
+      {guestMode && <GuestBanner onCreateAccount={startLogin} />}
+      {journeyStage && <div className="border-b border-[#e6ece7] bg-white/70"><div className="container py-3"><JourneyProgress active={journeyStage} /></div></div>}
+      {location === "/reports/new" && <ReportFormGuide />}
 
       <main>{children}</main>
 

@@ -74,4 +74,44 @@
   .access-choice { @apply rounded-[1.4rem] border p-6 transition duration-200; }
   .access-choice-primary { @apply border-[#0d5a4d] bg-[#0d5a4d] text-white shadow-[0_15px_32px_rgba(13,90,77,0.17)] hover:-translate-y-1 hover:bg-[#084a3e]; }
   .access-choice-guest { @apply border-[#dbe8e0] bg-white hover:-translate-y-1 hover:border-[#9fc9b9] hover:shadow-[0_14px_28px_rgba(24,70,57,0.09)]; }
+  .guest-banner { @apply border-b border-[#d8e8df] bg-[#f0f8f4]; }
+  .journey-progress { @apply grid grid-cols-4 gap-1 rounded-2xl border border-[#dfeae3] bg-[#f7faf8] p-2; }
+  .journey-step { @apply flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-1.5 py-2 text-center text-[10px] font-extrabold text-[#7b8981] sm:px-3 sm:text-xs; }
+  .journey-dot { @apply grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[#e9efeb] text-[#73827a]; }
+  .journey-step-active { @apply bg-white text-[#0d5a4d] shadow-sm; }
+  .journey-step-active .journey-dot { @apply bg-[#0d5a4d] text-white; }
+  .journey-step-complete { @apply text-[#36806b]; }
+  .journey-step-complete .journey-dot { @apply bg-[#dcefe5] text-[#167256]; }
+  .report-visual { @apply relative grid h-full place-items-center overflow-hidden; }
+  .report-visual-lost { background: linear-gradient(135deg, #f5eadc, #e9f0e8 68%); }
+  .report-visual-found { background: linear-gradient(135deg, #e0f2e9, #eef1df 68%); }
+  .report-visual-person { background-image: radial-gradient(circle at 66% 38%, rgba(223, 174, 108, 0.28), transparent 18%), linear-gradient(135deg, #f8eadc, #e8f1e9 68%); }
+  .report-visual-animal { background-image: radial-gradient(circle at 35% 30%, rgba(117, 171, 137, 0.28), transparent 18%), linear-gradient(135deg, #e2f2e9, #f3ecd8 70%); }
+  .report-visual-item { background-image: radial-gradient(circle at 76% 66%, rgba(196, 145, 101, 0.24), transparent 19%), linear-gradient(135deg, #e8efe9, #f6eddf 70%); }
+  .report-visual-orbit { @apply absolute rounded-full border border-white/55; }
+  .report-visual-orbit-one { width: 12rem; height: 12rem; top: -5rem; left: -2.5rem; }
+  .report-visual-orbit-two { width: 8rem; height: 8rem; right: -2rem; bottom: -3.5rem; }
+  .details-visual { @apply relative grid h-full place-items-center overflow-hidden; }
+  .details-visual-lost { background: linear-gradient(135deg, #f5e9d8, #e8f0e9 72%); }
+  .details-visual-found { background: linear-gradient(135deg, #e1f3e9, #f3efd7 72%); }
+  .details-visual-person { background-image: radial-gradient(circle at 70% 28%, rgba(224, 172, 105, 0.3), transparent 19%), linear-gradient(135deg, #f7e9dc, #e7f1e9 72%); }
+  .details-visual-animal { background-image: radial-gradient(circle at 30% 65%, rgba(113, 171, 138, 0.3), transparent 20%), linear-gradient(135deg, #e3f2e8, #f5edd9 72%); }
+  .details-visual-item { background-image: radial-gradient(circle at 73% 70%, rgba(200, 145, 99, 0.28), transparent 20%), linear-gradient(135deg, #e6efe8, #f7eddf 72%); }
+  .details-visual-ring { @apply absolute rounded-full border border-white/55; }
+  .details-visual-ring-one { width: 19rem; height: 19rem; top: -10rem; right: -5rem; }
+  .details-visual-ring-two { width: 14rem; height: 14rem; bottom: -8rem; left: -4rem; }
+  .journey-summary-card { @apply relative overflow-hidden rounded-2xl border border-[#dce8e1] bg-white p-4 shadow-[0_10px_25px_rgba(24,70,57,0.045)]; }
+  .journey-summary-card::after { content: ""; position: absolute; width: 6rem; height: 6rem; left: -2.3rem; bottom: -3rem; border-radius: 999px; background: rgba(124, 188, 162, 0.18); }
+  .journey-summary-label { @apply relative z-10 block text-xs font-extrabold text-[#678077]; }
+  .journey-summary-card strong { @apply relative z-10 mt-2 block font-display text-3xl font-black text-[#174e42]; }
+  .journey-summary-card > span:last-child { @apply relative z-10 mt-1 block text-xs leading-5 text-[#77867e]; }
+  .journey-summary-card-warm::after { background: rgba(232, 184, 112, 0.2); }
+  .journey-summary-card-success::after { background: rgba(90, 171, 129, 0.2); }
+  .notification-summary { @apply flex items-start gap-3 rounded-2xl border border-[#d5e8de] bg-[#eef8f3] p-4; }
+  .match-review-note { @apply mt-4 flex items-start gap-2 rounded-xl border border-[#f0dfbf] bg-[#fff8eb] p-3 text-xs leading-6 text-[#76633f]; }
+  .match-review-note svg { @apply mt-0.5 shrink-0 text-[#ae7b26]; }
+  .report-form-guide { @apply border-b border-[#dbe9e1] bg-[#eef8f3]; }
+  .report-form-guide-item { @apply flex items-start gap-2 rounded-xl border border-[#dcebe3] bg-[#f8fcfa] p-3; }
+  .report-form-guide-item p { @apply text-xs font-extrabold text-[#285246]; }
+  .report-form-guide-item span:last-child { @apply mt-1 block text-[11px] leading-5 text-[#6d7e74]; }
 }

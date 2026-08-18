@@ -25,6 +25,7 @@ export function StatusPill({ status }: { status: ReportStatus }) {
 
 export default function ReportCard({ report }: { report: ReportCardData }) {
   const KindIcon = report.itemKind === "person" ? UserRound : report.itemKind === "animal" ? PawPrint : Tag;
+  const visualClass = `report-visual report-visual-${report.itemKind} report-visual-${report.reportType}`;
   return (
     <Link href={`/reports/${report.id}`} className="group block h-full">
       <article className="report-card h-full overflow-hidden">
@@ -32,8 +33,11 @@ export default function ReportCard({ report }: { report: ReportCardData }) {
           {report.imageUrl ? (
             <img src={report.imageUrl} alt={`صورة البلاغ: ${report.name}`} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
           ) : (
-            <div className="grid h-full place-items-center bg-[radial-gradient(circle_at_30%_30%,#f4eee0,transparent_42%),radial-gradient(circle_at_74%_66%,#bfdbd1,transparent_47%),#e2e8e4]">
-              <span className="grid h-16 w-16 place-items-center rounded-[1.35rem] bg-white/75 text-[#0d5a4d] shadow-sm"><KindIcon size={28} /></span>
+            <div className={visualClass}>
+              <span className="report-visual-orbit report-visual-orbit-one" />
+              <span className="report-visual-orbit report-visual-orbit-two" />
+              <span className="relative z-10 grid h-16 w-16 place-items-center rounded-[1.35rem] bg-white/85 text-[#0d5a4d] shadow-[0_12px_24px_rgba(24,70,57,0.12)]"><KindIcon size={28} /></span>
+              <span className="absolute bottom-3 right-3 rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-extrabold text-[#42675c]">{report.itemKind === "person" ? "حالة إنسانية" : report.itemKind === "animal" ? "رفيق ينتظر صاحبه" : "غرض بحاجة إلى أثر"}</span>
             </div>
           )}
           <div className="absolute inset-x-3 top-3 flex items-center justify-between gap-2">

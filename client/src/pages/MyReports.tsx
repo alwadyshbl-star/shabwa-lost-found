@@ -28,6 +28,15 @@ export default function MyReports() {
     { enabled: Boolean(selected) },
   );
   const recover = trpc.report.recover.useMutation();
+  const overview = (reports.data ?? []).reduce(
+    (summary, report) => {
+      summary.total += 1;
+      if (report.status === "open") summary.open += 1;
+      if (report.status === "recovered") summary.recovered += 1;
+      return summary;
+    },
+    { total: 0, open: 0, recovered: 0 },
+  );
 
   const markRecovered = async (id: number) => {
     try {
@@ -53,6 +62,11 @@ export default function MyReports() {
         </div>
       </section>
       <section className="container -mt-5">
+        <div className="mb-6 grid gap-3 sm:grid-cols-3">
+          <div className="journey-summary-card"><span className="journey-summary-label">كل بلاغاتك</span><strong>{overview.total}</strong><span>تابع كل ما نشرته من مكان واحد</span></div>
+          <div className="journey-summary-card journey-summary-card-warm"><span className="journey-summary-label">تحتاج متابعة</span><strong>{overview.open}</strong><span>راجع المطابقات أو حدّث التفاصيل</span></div>
+          <div className="journey-summary-card journey-summary-card-success"><span className="journey-summary-label">تم الاسترجاع</span><strong>{overview.recovered}</strong><span>حالات أُغلقت بنجاح</span></div>
+        </div>
         <div className="grid gap-7 lg:grid-cols-[1.35fr_0.65fr]">
           <div className="rounded-[1.7rem] border border-[#e1e8e2] bg-white p-5 shadow-[0_15px_38px_rgba(27,75,61,0.06)] sm:p-7">
             <div className="mb-6 flex items-center justify-between">
@@ -85,7 +99,7 @@ export default function MyReports() {
           <aside className="rounded-[1.7rem] border border-[#e1e8e2] bg-white p-6 shadow-[0_15px_38px_rgba(27,75,61,0.06)]">
             <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#e6f2ed] text-[#0d5a4d]"><BellRing size={20} /></span>
             <h2 className="mt-4 font-display text-2xl font-black text-[#173e35]">التطابقات المحتملة</h2>
-            {!selected ? <p className="mt-3 text-sm leading-7 text-[#6b7a72]">اختر «مطابقات» بجانب أي بلاغ لمراجعة النتائج المقترحة.</p> : matches.isLoading ? <p className="mt-5 flex items-center gap-2 text-sm text-[#6b7a72]"><Loader2 size={17} className="animate-spin" />جارٍ البحث في التطابقات...</p> : matches.data?.length ? <div className="mt-5 space-y-3">{matches.data.map(match => <Link key={match.id} href={`/reports/${match.candidate.id}`} className="block rounded-xl border border-[#e2ebe5] p-4 transition hover:border-[#87b9a9] hover:bg-[#f7fbf8]"><div className="flex items-center justify-between gap-2"><p className="font-bold text-[#24473c]">{match.candidate.name}</p><span className="rounded-full bg-[#e3f0eb] px-2 py-1 text-[11px] font-extrabold text-[#0d5a4d]">{match.score}%</span></div><p className="mt-2 text-xs leading-5 text-[#77857d]">{match.candidate.location} · {reportTypeLabels[match.candidate.reportType]}</p></Link>)}</div> : <div className="mt-5 rounded-xl bg-[#f5f8f6] p-4 text-sm leading-6 text-[#6b7a72]"><AlertCircle size={17} className="mb-2 text-[#bd7f25]" />لا توجد تطابقات محتملة لهذا البلاغ حتى الآن.</div>}
+            {!selected ? <div className="mt-4 rounded-xl bg-[#f5f8f6] p-4 text-sm leading-7 text-[#6b7a72]"><p>ابدأ باختيار «مطابقات» بجانب أي بلاغ مفتوح.</p><p className="mt-2 text-xs text-[#8a9690]">سنرتب الحالات حسب درجة التشابه لتراجعها دون كشف تفاصيل حساسة مبكرًا.</p></div> : matches.isLoading ? <p className="mt-5 flex items-center gap-2 text-sm text-[#6b7a72]"><Loader2 size={17} className="animate-spin" />جارٍ البحث في التطابقات...</p> : matches.data?.length ? <div className="mt-5 space-y-3">{matches.data.map(match => <Link key={match.id} href={`/reports/${match.candidate.id}`} className="block rounded-xl border border-[#e2ebe5] p-4 transition hover:border-[#87b9a9] hover:bg-[#f7fbf8]"><div className="flex items-center justify-between gap-2"><p className="font-bold text-[#24473c]">{match.candidate.name}</p><span className="rounded-full bg-[#e3f0eb] px-2 py-1 text-[11px] font-extrabold text-[#0d5a4d]">{match.score}%</span></div><p className="mt-2 text-xs leading-5 text-[#77857d]">{match.candidate.location} · {reportTypeLabels[match.candidate.reportType]}</p></Link>)}</div> : <div className="mt-5 rounded-xl bg-[#f5f8f6] p-4 text-sm leading-6 text-[#6b7a72]"><AlertCircle size={17} className="mb-2 text-[#bd7f25]" />لا توجد تطابقات محتملة لهذا البلاغ حتى الآن.</div>}
           </aside>
         </div>
       </section>
