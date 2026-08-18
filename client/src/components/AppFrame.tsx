@@ -1,9 +1,11 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
-import { Bell, ClipboardList, HeartHandshake, LayoutDashboard, Menu, Search, ShieldCheck, X } from "lucide-react";
-import { useState } from "react";
+import { Bell, ClipboardList, Eye, HeartHandshake, LayoutDashboard, Menu, Search, ShieldCheck, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import AccessWelcome from "@/components/AccessWelcome";
+import { GUEST_MODE_STORAGE_KEY, hasChosenGuestMode, shouldShowAccessWelcome } from "@/lib/entry-mode";
 
 type AppFrameProps = { children: React.ReactNode };
 
@@ -17,6 +19,22 @@ export default function AppFrame({ children }: AppFrameProps) {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [guestMode, setGuestMode] = useState(() =>
+    typeof window !== "undefined" && hasChosenGuestMode(window.localStorage.getItem(GUEST_MODE_STORAGE_KEY)),
+  );
+
+  useEffect(() => {
+    if (isAuthenticated && guestMode) {
+      window.localStorage.removeItem(GUEST_MODE_STORAGE_KEY);
+      setGuestMode(false);
+    }
+  }, [guestMode, isAuthenticated]);
+
+  const continueAsGuest = () => {
+    window.localStorage.setItem(GUEST_MODE_STORAGE_KEY, "guest");
+    setGuestMode(true);
+  };
+  const showAccessWelcome = !loading && shouldShowAccessWelcome(isAuthenticated, guestMode ? "guest" : null);
 
   const navLinks = navigation.map(item => {
     const Icon = item.icon;
@@ -70,6 +88,11 @@ export default function AppFrame({ children }: AppFrameProps) {
                   خروج
                 </Button>
               </>
+            ) : guestMode ? (
+              <>
+                <span className="rounded-full bg-[#edf3ef] px-3 py-2 text-xs font-bold text-[#607168]">تتصفح كزائر</span>
+                <Button onClick={startLogin} className="rounded-xl bg-[#0d5a4d] px-4 font-bold text-white hover:bg-[#07473d]">إنشاء حساب</Button>
+              </>
             ) : (
               <Button onClick={startLogin} disabled={loading} className="rounded-xl bg-[#0d5a4d] px-5 font-bold text-white shadow-sm hover:bg-[#07473d]">
                 تسجيل الدخول
@@ -92,6 +115,8 @@ export default function AppFrame({ children }: AppFrameProps) {
                   {user?.role === "admin" && <Link href="/admin" onClick={() => setMobileOpen(false)} className="nav-link"><ShieldCheck size={17} />لوحة المشرف</Link>}
                   <Button variant="ghost" className="justify-start px-3 font-bold" onClick={logout}>تسجيل الخروج</Button>
                 </>
+              ) : guestMode ? (
+                <><span className="nav-link"><Eye size={17} />تتصفح كزائر</span><Button onClick={startLogin} className="mt-2 rounded-xl bg-[#0d5a4d] font-bold text-white">إنشاء حساب</Button></>
               ) : (
                 <Button onClick={startLogin} className="mt-2 rounded-xl bg-[#0d5a4d] font-bold text-white">تسجيل الدخول أو إنشاء حساب</Button>
               )}
@@ -119,6 +144,7 @@ export default function AppFrame({ children }: AppFrameProps) {
           </div>
         </div>
       </footer>
+      {showAccessWelcome && <AccessWelcome onContinueGuest={continueAsGuest} onStartAccount={startLogin} />}
     </div>
   );
 }

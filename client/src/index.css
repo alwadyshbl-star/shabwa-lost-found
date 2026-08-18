@@ -70,4 +70,8 @@
   .segmented-control .segmented-active { @apply bg-white text-[#0d5a4d] shadow-sm; }
   .image-dropzone { @apply relative grid min-h-40 place-items-center overflow-hidden rounded-2xl border border-dashed border-[#b8d1c5] bg-[#f7fbf8] p-5 text-center text-[#4d887b] transition hover:bg-[#f0f7f3]; }
   .image-dropzone img { @apply absolute inset-0 h-full w-full object-cover; }
+  .access-welcome-art { background-image: radial-gradient(circle at 50% -24%, rgba(87, 168, 141, 0.46), transparent 64%), radial-gradient(circle at 12% 88%, rgba(230, 196, 145, 0.34), transparent 38%), linear-gradient(125deg, #e7f2eb, #f9f8f2); }
+  .access-choice { @apply rounded-[1.4rem] border p-6 transition duration-200; }
+  .access-choice-primary { @apply border-[#0d5a4d] bg-[#0d5a4d] text-white shadow-[0_15px_32px_rgba(13,90,77,0.17)] hover:-translate-y-1 hover:bg-[#084a3e]; }
+  .access-choice-guest { @apply border-[#dbe8e0] bg-white hover:-translate-y-1 hover:border-[#9fc9b9] hover:shadow-[0_14px_28px_rgba(24,70,57,0.09)]; }
 }
