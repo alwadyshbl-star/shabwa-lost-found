@@ -198,6 +198,7 @@
   .admin-loading { @apply mt-6 h-56 animate-pulse rounded-2xl bg-[#eff3f0]; }
   .match-notice-label { @apply rounded-full bg-[#e1f2e9] px-2.5 py-1 text-[11px] font-extrabold text-[#0d644f]; }
   .match-notice-score { @apply rounded-full bg-[#fbf0db] px-2.5 py-1 text-[11px] font-extrabold text-[#93621c]; }
+  .notification-nav-badge { @apply absolute -left-1 -top-1 grid min-w-4 h-4 place-items-center rounded-full border-2 border-[#f8f8f5] bg-[#c35042] px-1 text-[9px] font-black leading-none text-white; }
   @media (max-width: 1023px) {
     .auth-page { display: block !important; width: 100vw; overflow-x: hidden; }
     .auth-panel { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 2rem 1.5rem 3rem !important; }

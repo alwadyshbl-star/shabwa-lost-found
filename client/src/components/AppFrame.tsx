@@ -4,6 +4,7 @@ import { Bell, ClipboardList, Eye, HeartHandshake, LayoutDashboard, Menu, Search
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 import AccessWelcome from "@/components/AccessWelcome";
 import GuestBanner from "@/components/GuestBanner";
 import JourneyProgress, { type JourneyStage } from "@/components/JourneyProgress";
@@ -20,6 +21,7 @@ const navigation = [
 
 export default function AppFrame({ children }: AppFrameProps) {
   const { user, isAuthenticated, loading, logout } = useAuth();
+  const notificationFeed = trpc.notification.mine.useQuery(undefined, { enabled: isAuthenticated });
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [guestMode, setGuestMode] = useState(() =>
@@ -38,6 +40,7 @@ export default function AppFrame({ children }: AppFrameProps) {
     setGuestMode(true);
   };
   const showAccessWelcome = !loading && shouldShowAccessWelcome(isAuthenticated, guestMode ? "guest" : null);
+  const unreadNotifications = notificationFeed.data?.filter(notification => !notification.isRead).length ?? 0;
   const journeyStage: JourneyStage | null =
     location === "/search" ? "discover" :
     location === "/reports/new" ? "report" :
@@ -81,8 +84,9 @@ export default function AppFrame({ children }: AppFrameProps) {
           <div className="hidden items-center gap-2 md:flex">
             {isAuthenticated ? (
               <>
-                <Link href="/notifications" className="icon-button" aria-label="الإشعارات">
+                <Link href="/notifications" className="icon-button relative" aria-label="الإشعارات">
                   <Bell size={19} />
+                  {unreadNotifications > 0 && <span className="notification-nav-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}
                 </Link>
                 {user?.role === "admin" && (
                   <Link href="/admin" className="icon-button" aria-label="لوحة المشرف">
@@ -108,9 +112,12 @@ export default function AppFrame({ children }: AppFrameProps) {
             )}
           </div>
 
-          <button className="icon-button md:hidden" onClick={() => setMobileOpen(!mobileOpen)} aria-label="فتح القائمة">
-            {mobileOpen ? <X size={21} /> : <Menu size={21} />}
-          </button>
+          <div className="flex items-center gap-2 md:hidden">
+            {isAuthenticated && <Link href="/notifications" className="icon-button relative" aria-label="الإشعارات"><Bell size={19} />{unreadNotifications > 0 && <span className="notification-nav-badge">{unreadNotifications > 9 ? "9+" : unreadNotifications}</span>}</Link>}
+            <button className="icon-button" onClick={() => setMobileOpen(!mobileOpen)} aria-label="فتح القائمة">
+              {mobileOpen ? <X size={21} /> : <Menu size={21} />}
+            </button>
+          </div>
         </div>
 
         {mobileOpen && (
