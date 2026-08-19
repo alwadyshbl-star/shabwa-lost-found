@@ -23,6 +23,23 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+/** First-party email/password credentials. Passwords are stored only as hashes. */
+export const localAccounts = mysqlTable(
+  "local_accounts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    email: varchar("email", { length: 320 }).notNull(),
+    passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => ({
+    userUnique: uniqueIndex("local_accounts_user_unique").on(table.userId),
+    emailUnique: uniqueIndex("local_accounts_email_unique").on(table.email),
+  }),
+);
+
 /** A public or private lost-and-found case, owned by one registered user. */
 export const reports = mysqlTable(
   "reports",
@@ -92,5 +109,6 @@ export const notifications = mysqlTable(
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type LocalAccount = typeof localAccounts.$inferSelect;
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = typeof reports.$inferInsert;

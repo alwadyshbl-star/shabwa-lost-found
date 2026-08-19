@@ -1,8 +1,10 @@
 import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { randomUUID } from "node:crypto";
 import {
   InsertReport,
   InsertUser,
+  localAccounts,
   notifications,
   Report,
   reportMatches,
@@ -50,6 +52,78 @@ export async function getUserByOpenId(openId: string) {
   if (!db) return undefined;
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
   return result[0];
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getLocalAccountByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select({ user: users, passwordHash: localAccounts.passwordHash })
+    .from(localAccounts)
+    .innerJoin(users, eq(localAccounts.userId, users.id))
+    .where(eq(localAccounts.email, email))
+    .limit(1);
+  return result[0];
+}
+
+/** Creates a local credential, reusing a legacy user with the same email when available. */
+export async function createLocalAccount(input: { name: string; email: string; passwordHash: string }) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const existing = await getLocalAccountByEmail(input.email);
+  if (existing) return null;
+
+  return db.transaction(async tx => {
+    const matchingUser = await tx.select().from(users).where(eq(users.email, input.email)).limit(1);
+    let userId = matchingUser[0]?.id;
+    if (!userId) {
+      const created = await tx.insert(users).values({
+        openId: `local:${randomUUID()}`,
+        name: input.name,
+        email: input.email,
+        loginMethod: "local",
+        role: "user",
+        lastSignedIn: new Date(),
+      });
+      userId = Number(created[0].insertId);
+    } else {
+      await tx.update(users).set({ name: input.name, loginMethod: "local", lastSignedIn: new Date() }).where(eq(users.id, userId));
+    }
+
+    await tx.insert(localAccounts).values({ userId, email: input.email, passwordHash: input.passwordHash });
+    const userRows = await tx.select().from(users).where(eq(users.id, userId)).limit(1);
+    return userRows[0];
+  });
+}
+
+export async function updateLocalLastSignedIn(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
+}
+
+/** Links or refreshes a local credential for an already-authenticated legacy user. */
+export async function setLocalPasswordForUser(input: { userId: number; email: string; passwordHash: string }) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const matchingEmail = await getLocalAccountByEmail(input.email);
+  if (matchingEmail && matchingEmail.user.id !== input.userId) return null;
+
+  const existingCredential = await db.select().from(localAccounts).where(eq(localAccounts.userId, input.userId)).limit(1);
+  if (existingCredential[0]) {
+    await db.update(localAccounts).set({ email: input.email, passwordHash: input.passwordHash }).where(eq(localAccounts.userId, input.userId));
+  } else {
+    await db.insert(localAccounts).values({ userId: input.userId, email: input.email, passwordHash: input.passwordHash });
+  }
+  await db.update(users).set({ email: input.email, loginMethod: "local", lastSignedIn: new Date() }).where(eq(users.id, input.userId));
+  return getUserById(input.userId);
 }
 
 export type PublicReportFilters = {

@@ -15,6 +15,13 @@
       "when": 1787050444839,
       "tag": "0001_dapper_viper",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787161156848,
+      "tag": "0002_flaky_nightshade",
+      "breakpoints": true
     }
   ]
 }

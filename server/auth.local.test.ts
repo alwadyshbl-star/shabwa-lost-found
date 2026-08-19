@@ -1,0 +1,89 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { TrpcContext } from "./_core/context";
+
+vi.mock("./db", () => ({
+  createLocalAccount: vi.fn(),
+  getLocalAccountByEmail: vi.fn(),
+  setLocalPasswordForUser: vi.fn(),
+  updateLocalLastSignedIn: vi.fn(),
+}));
+
+vi.mock("./localAuth", () => ({
+  createLocalSessionToken: vi.fn(),
+  LOCAL_SESSION_MAX_AGE_MS: 2_592_000_000,
+}));
+
+import * as db from "./db";
+import { createLocalSessionToken } from "./localAuth";
+import { appRouter } from "./routers";
+import { hashPassword } from "./password";
+import { COOKIE_NAME } from "../shared/const";
+
+const user = {
+  id: 41,
+  openId: "local:test-user",
+  name: "صالح",
+  email: "saleh@example.com",
+  loginMethod: "local",
+  role: "user" as const,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  lastSignedIn: new Date(),
+};
+
+function context(): { ctx: TrpcContext; cookies: Array<{ name: string; value: string }> } {
+  const cookies: Array<{ name: string; value: string }> = [];
+  return {
+    ctx: {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { cookie: (name: string, value: string) => cookies.push({ name, value }), clearCookie: vi.fn() } as TrpcContext["res"],
+    },
+    cookies,
+  };
+}
+
+describe("local auth router", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(createLocalSessionToken).mockResolvedValue("local-session-token");
+  });
+
+  it("creates a first-party account and writes a secure session cookie", async () => {
+    vi.mocked(db.createLocalAccount).mockResolvedValue(user);
+    const { ctx, cookies } = context();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.auth.register({ name: "صالح", email: "SALEH@example.com", password: "AhtarPass2026" })).resolves.toMatchObject({ id: 41, email: "saleh@example.com" });
+    expect(db.createLocalAccount).toHaveBeenCalledWith(expect.objectContaining({ email: "saleh@example.com", name: "صالح", passwordHash: expect.stringMatching(/^scrypt\$/) }));
+    expect(cookies).toEqual([{ name: COOKIE_NAME, value: "local-session-token" }]);
+  });
+
+  it("rejects a wrong password without creating a session", async () => {
+    vi.mocked(db.getLocalAccountByEmail).mockResolvedValue({ user, passwordHash: await hashPassword("AhtarPass2026") });
+    const { ctx, cookies } = context();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.auth.login({ email: "saleh@example.com", password: "wrong-password" })).rejects.toThrow("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+    expect(cookies).toEqual([]);
+  });
+
+  it("signs in an existing local account and exposes it through auth.me", async () => {
+    vi.mocked(db.getLocalAccountByEmail).mockResolvedValue({ user, passwordHash: await hashPassword("AhtarPass2026") });
+    const { ctx, cookies } = context();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.auth.login({ email: "SALEH@example.com", password: "AhtarPass2026" })).resolves.toMatchObject({ id: 41, email: "saleh@example.com" });
+    expect(db.updateLocalLastSignedIn).toHaveBeenCalledWith(41);
+    expect(cookies).toEqual([{ name: COOKIE_NAME, value: "local-session-token" }]);
+
+    const authenticatedCaller = appRouter.createCaller({ ...ctx, user });
+    await expect(authenticatedCaller.auth.me()).resolves.toMatchObject({ id: 41, email: "saleh@example.com" });
+  });
+
+  it("blocks password linking when no authenticated user is present", async () => {
+    const { ctx } = context();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.auth.setPassword({ email: "saleh@example.com", password: "AhtarPass2026" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+});
