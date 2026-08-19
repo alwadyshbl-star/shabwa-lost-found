@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, like, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { randomUUID } from "node:crypto";
 import {
@@ -74,7 +74,7 @@ export async function getLocalAccountByEmail(email: string) {
 }
 
 /** Creates a local credential, reusing a legacy user with the same email when available. */
-export async function createLocalAccount(input: { name: string; email: string; passwordHash: string }) {
+export async function createLocalAccount(input: { name: string; email: string; passwordHash: string; role: "user" | "admin" }) {
   const db = await getDb();
   if (!db) return undefined;
   const existing = await getLocalAccountByEmail(input.email);
@@ -89,7 +89,7 @@ export async function createLocalAccount(input: { name: string; email: string; p
         name: input.name,
         email: input.email,
         loginMethod: "local",
-        role: "user",
+        role: input.role,
         lastSignedIn: new Date(),
       });
       userId = Number(created[0].insertId);
@@ -316,5 +316,85 @@ export async function markNotificationRead(id: number, userId: number) {
   const db = await getDb();
   if (!db) return false;
   await db.update(notifications).set({ isRead: true }).where(and(eq(notifications.id, id), eq(notifications.userId, userId)));
+  return true;
+}
+
+export async function getAdminStats() {
+  const db = await getDb();
+  const empty = { users: 0, reports: 0, open: 0, recovered: 0, underReview: 0, lost: 0, found: 0 };
+  if (!db) return empty;
+  const [userRows, reportRows, openRows, recoveredRows, reviewRows, lostRows, foundRows] = await Promise.all([
+    db.select({ count: sql<number>`count(*)` }).from(users),
+    db.select({ count: sql<number>`count(*)` }).from(reports),
+    db.select({ count: sql<number>`count(*)` }).from(reports).where(eq(reports.status, "open")),
+    db.select({ count: sql<number>`count(*)` }).from(reports).where(eq(reports.status, "recovered")),
+    db.select({ count: sql<number>`count(*)` }).from(reports).where(eq(reports.moderationStatus, "under_review")),
+    db.select({ count: sql<number>`count(*)` }).from(reports).where(eq(reports.reportType, "lost")),
+    db.select({ count: sql<number>`count(*)` }).from(reports).where(eq(reports.reportType, "found")),
+  ]);
+  return {
+    users: Number(userRows[0]?.count ?? 0),
+    reports: Number(reportRows[0]?.count ?? 0),
+    open: Number(openRows[0]?.count ?? 0),
+    recovered: Number(recoveredRows[0]?.count ?? 0),
+    underReview: Number(reviewRows[0]?.count ?? 0),
+    lost: Number(lostRows[0]?.count ?? 0),
+    found: Number(foundRows[0]?.count ?? 0),
+  };
+}
+
+export async function listAdminUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      createdAt: users.createdAt,
+      lastSignedIn: users.lastSignedIn,
+      reportCount: sql<number>`count(${reports.id})`,
+    })
+    .from(users)
+    .leftJoin(reports, eq(reports.userId, users.id))
+    .groupBy(users.id)
+    .orderBy(desc(users.createdAt))
+    .limit(100);
+}
+
+export async function setUserRole(userId: number, role: "user" | "admin") {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(users).set({ role }).where(eq(users.id, userId));
+  return getUserById(userId);
+}
+
+export async function deleteReportAsAdmin(reportId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.transaction(async tx => {
+    await tx.delete(reportMatches).where(or(eq(reportMatches.sourceReportId, reportId), eq(reportMatches.candidateReportId, reportId)));
+    await tx.delete(notifications).where(eq(notifications.reportId, reportId));
+    await tx.delete(reports).where(eq(reports.id, reportId));
+  });
+  return true;
+}
+
+export async function deleteUserAsAdmin(userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  await db.transaction(async tx => {
+    const ownedReports = await tx.select({ id: reports.id }).from(reports).where(eq(reports.userId, userId));
+    const reportIds = ownedReports.map(report => report.id);
+    if (reportIds.length > 0) {
+      await tx.delete(reportMatches).where(or(inArray(reportMatches.sourceReportId, reportIds), inArray(reportMatches.candidateReportId, reportIds)));
+      await tx.delete(notifications).where(inArray(notifications.reportId, reportIds));
+      await tx.delete(reports).where(inArray(reports.id, reportIds));
+    }
+    await tx.delete(notifications).where(eq(notifications.userId, userId));
+    await tx.delete(localAccounts).where(eq(localAccounts.userId, userId));
+    await tx.delete(users).where(eq(users.id, userId));
+  });
   return true;
 }

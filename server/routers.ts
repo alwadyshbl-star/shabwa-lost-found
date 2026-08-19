@@ -1,24 +1,34 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { timingSafeEqual } from "node:crypto";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { createLocalSessionToken, LOCAL_SESSION_MAX_AGE_MS } from "./localAuth";
 import { hashPassword, normalizeEmail, verifyPassword } from "./password";
 import * as db from "./db";
+import { ENV } from "./_core/env";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { notificationRouter } from "./routers/notifications";
 import { reportRouter } from "./routers/reports";
+import { adminRouter } from "./routers/admin";
 
 export const appRouter = router({
   system: systemRouter,
   auth: router({
     register: publicProcedure
-      .input(z.object({ name: z.string().trim().min(2).max(120), email: z.string().trim().email().max(320), password: z.string().min(8).max(128) }))
+      .input(z.object({ name: z.string().trim().min(2).max(120), email: z.string().trim().email().max(320), password: z.string().min(8).max(128), role: z.enum(["user", "admin"]).default("user"), adminSetupCode: z.string().max(256).optional() }))
       .mutation(async ({ ctx, input }) => {
+        const requestedAdmin = input.role === "admin";
+        const expectedCode = Buffer.from(ENV.adminSetupCode);
+        const suppliedCode = Buffer.from(input.adminSetupCode ?? "");
+        const isValidAdminCode = expectedCode.length >= 8 && expectedCode.length === suppliedCode.length && timingSafeEqual(expectedCode, suppliedCode);
+        if (requestedAdmin && !isValidAdminCode) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "رمز تفعيل المشرف غير صحيح." });
+        }
         const email = normalizeEmail(input.email);
         const passwordHash = await hashPassword(input.password);
-        const user = await db.createLocalAccount({ name: input.name, email, passwordHash });
+        const user = await db.createLocalAccount({ name: input.name, email, passwordHash, role: requestedAdmin ? "admin" : "user" });
         if (user === null) throw new TRPCError({ code: "CONFLICT", message: "هذا البريد الإلكتروني مستخدم بالفعل. سجّل الدخول بدلًا من إنشاء حساب جديد." });
         if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذر إنشاء الحساب حاليًا." });
         const token = await createLocalSessionToken(user.id);
@@ -59,6 +69,7 @@ export const appRouter = router({
   }),
   report: reportRouter,
   notification: notificationRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

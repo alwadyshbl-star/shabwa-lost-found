@@ -154,4 +154,12 @@ export const reportRouter = router({
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على البلاغ." });
       return updated;
     }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdmin(ctx.user.role);
+      await db.deleteReportAsAdmin(input.id);
+      return { success: true } as const;
+    }),
 });

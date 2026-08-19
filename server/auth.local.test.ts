@@ -55,8 +55,25 @@ describe("local auth router", () => {
     const caller = appRouter.createCaller(ctx);
 
     await expect(caller.auth.register({ name: "صالح", email: "SALEH@example.com", password: "AhtarPass2026" })).resolves.toMatchObject({ id: 41, email: "saleh@example.com" });
-    expect(db.createLocalAccount).toHaveBeenCalledWith(expect.objectContaining({ email: "saleh@example.com", name: "صالح", passwordHash: expect.stringMatching(/^scrypt\$/) }));
+    expect(db.createLocalAccount).toHaveBeenCalledWith(expect.objectContaining({ email: "saleh@example.com", name: "صالح", role: "user", passwordHash: expect.stringMatching(/^scrypt\$/) }));
     expect(cookies).toEqual([{ name: COOKIE_NAME, value: "local-session-token" }]);
+  });
+
+  it("accepts an administrator registration only when the configured setup code is supplied", async () => {
+    const setupCode = process.env.ADMIN_SETUP_CODE;
+    if (!setupCode) throw new Error("ADMIN_SETUP_CODE must be configured for the admin activation test");
+    vi.mocked(db.createLocalAccount).mockResolvedValue({ ...user, role: "admin" });
+    const { ctx } = context();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.auth.register({ name: "مدير", email: "admin@example.com", password: "AhtarPass2026", role: "admin", adminSetupCode: setupCode })).resolves.toMatchObject({ role: "admin" });
+    expect(db.createLocalAccount).toHaveBeenCalledWith(expect.objectContaining({ role: "admin" }));
+  });
+
+  it("rejects administrator registration with an invalid setup code", async () => {
+    const { ctx } = context();
+    const caller = appRouter.createCaller(ctx);
+    await expect(caller.auth.register({ name: "مدير", email: "blocked@example.com", password: "AhtarPass2026", role: "admin", adminSetupCode: "incorrect-code" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("rejects a wrong password without creating a session", async () => {

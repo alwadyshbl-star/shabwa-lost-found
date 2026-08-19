@@ -132,6 +132,12 @@
   .auth-form input { @apply min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#23463a] outline-none placeholder:text-[#9aa69f]; }
   .auth-form label button { @apply text-[#6e8278] transition hover:text-[#0d5a4d]; }
   .auth-help { @apply rounded-xl bg-[#f2f8f4] p-3 text-xs leading-6 text-[#638075]; }
+  .role-picker { @apply rounded-xl border border-[#dbe5df] bg-[#fbfdfb] p-3; }
+  .role-picker legend { @apply px-1 text-sm font-extrabold text-[#365247]; }
+  .role-picker > div { @apply mt-2 grid grid-cols-2 gap-2; }
+  .role-picker label { @apply cursor-pointer rounded-lg border border-[#dce6e0] px-3 py-2 text-center text-xs font-bold text-[#61766b] transition; }
+  .role-picker input { @apply sr-only; }
+  .role-picker .role-option-active { @apply border-[#3f9778] bg-[#e7f4ed] text-[#0d5a4d]; }
   .auth-submit { @apply mt-2 h-12 w-full rounded-xl bg-[#0d5a4d] text-base font-extrabold text-white hover:bg-[#07473d]; }
   .auth-guest { @apply mt-6 flex items-center justify-center gap-2 text-sm text-[#728077]; }
   .auth-guest a { @apply font-extrabold text-[#0d5a4d] hover:underline; }
@@ -142,6 +148,54 @@
   .auth-aside ul { @apply mt-9 space-y-3 text-sm text-[#d5e9df]; }
   .auth-aside li { @apply flex items-center gap-2; }
   .auth-aside li::before { content: "✓"; @apply grid h-5 w-5 place-items-center rounded-full bg-white/10 text-xs text-[#bde5d4]; }
+  .admin-hero { @apply bg-[#eff6f1] pb-20 pt-12; background-image: radial-gradient(circle at 8% 30%, rgba(100, 176, 142, .16), transparent 24%), radial-gradient(circle at 84% 14%, rgba(235, 199, 134, .18), transparent 22%); }
+  .admin-hero .container { @apply flex flex-wrap items-end justify-between gap-6; }
+  .admin-hero-mark { @apply flex items-center gap-3 rounded-2xl border border-[#d4e6dc] bg-white/80 px-4 py-3 font-extrabold text-[#135843] shadow-sm; }
+  .admin-hero-mark span { @apply text-sm; }
+  .admin-stat-grid { @apply grid gap-3 sm:grid-cols-2 lg:grid-cols-4; }
+  .admin-stat-card { @apply relative overflow-hidden rounded-2xl border border-[#dfe9e3] bg-white p-5 shadow-[0_12px_28px_rgba(21,73,58,.05)]; }
+  .admin-stat-card > span { @apply grid h-9 w-9 place-items-center rounded-xl; }
+  .admin-stat-card p { @apply mt-4 text-xs font-extrabold text-[#728179]; }
+  .admin-stat-card strong { @apply mt-1 block font-display text-3xl font-black text-[#173e35]; }
+  .admin-stat-mint > span { @apply bg-[#e4f2eb] text-[#126149]; }
+  .admin-stat-blue > span { @apply bg-[#e9eff7] text-[#3c648e]; }
+  .admin-stat-sand > span { @apply bg-[#fbf0db] text-[#9b6d21]; }
+  .admin-stat-success > span { @apply bg-[#e6f4e8] text-[#32814c]; }
+  .admin-workspace { @apply mt-6 overflow-hidden rounded-[1.7rem] border border-[#dce8e0] bg-white shadow-[0_18px_45px_rgba(20,74,58,.07)]; }
+  .admin-tabs { @apply flex overflow-x-auto border-b border-[#edf1ed] bg-[#fbfdfb] p-2; }
+  .admin-tabs button { @apply flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold text-[#718178] transition; }
+  .admin-tabs button span { @apply rounded-full bg-[#e7eee9] px-2 py-0.5 text-[10px]; }
+  .admin-tabs .admin-tab-active { @apply bg-[#0d5a4d] text-white shadow-sm; }
+  .admin-tabs .admin-tab-active span { @apply bg-white/15 text-white; }
+  .admin-overview { @apply grid gap-4 p-5 lg:grid-cols-2; }
+  .admin-insight-card { @apply flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#e1ebe5] bg-[#fbfdfb] p-5; }
+  .admin-insight-card p { @apply mt-2 text-xs font-extrabold text-[#73827a]; }
+  .admin-insight-card strong { @apply mt-1 block font-display text-2xl font-black text-[#1c4137]; }
+  .admin-insight-card small { @apply mt-1 block text-xs text-[#7d8a83]; }
+  .admin-insight-icon { @apply grid h-9 w-9 place-items-center rounded-xl bg-[#e4f2eb] text-[#17624a]; }
+  .admin-insight-icon-sand { @apply bg-[#fbf0dc] text-[#9a6a20]; }
+  .admin-guide { @apply flex items-start gap-3 rounded-2xl bg-[#0e4d41] p-5 text-white lg:col-span-2; }
+  .admin-guide h2 { @apply font-display text-lg font-black; }
+  .admin-guide p { @apply mt-1 text-sm leading-6 text-[#d0e4db]; }
+  .admin-section { @apply p-5 sm:p-6; }
+  .admin-section-heading { @apply flex flex-wrap items-end justify-between gap-4; }
+  .admin-section-heading h2 { @apply mt-1 font-display text-2xl font-black text-[#1c4137]; }
+  .admin-section-heading p:last-child { @apply mt-1 text-sm text-[#728178]; }
+  .admin-section-heading > span { @apply rounded-full bg-[#e8f2ec] px-3 py-1.5 text-xs font-extrabold text-[#155944]; }
+  .admin-report-list, .admin-user-list { @apply mt-6 space-y-3; }
+  .admin-report-row, .admin-user-row { @apply flex flex-wrap items-center gap-3 rounded-2xl border border-[#e3ebe6] p-4 transition hover:border-[#c8ddd1] hover:bg-[#fbfdfb]; }
+  .admin-row-primary { @apply min-w-[180px] flex-1; }
+  .admin-row-primary strong { @apply flex items-center gap-2 font-extrabold text-[#28483e]; }
+  .admin-row-primary strong small { @apply rounded-full bg-[#e5f3ec] px-2 py-0.5 text-[10px] text-[#17614a]; }
+  .admin-row-primary span { @apply mt-1 block text-xs text-[#77867e]; }
+  .admin-row-meta { @apply flex flex-wrap gap-2 text-xs font-bold text-[#6f8077]; }
+  .admin-row-meta > span { @apply rounded-lg bg-[#f1f5f2] px-2.5 py-1; }
+  .admin-status-live { @apply bg-[#e4f3e9] !text-[#227142]; }
+  .admin-status-review { @apply bg-[#f5ecd9] !text-[#99651d]; }
+  .admin-row-actions { @apply flex flex-wrap gap-2 sm:mr-auto; }
+  .admin-user-avatar { @apply grid h-10 w-10 place-items-center rounded-xl bg-[#0d5a4d] font-display font-black text-white; }
+  .admin-role-select { @apply h-9 rounded-lg border border-[#dbe6df] bg-white px-2 text-xs font-bold text-[#345448] outline-none focus:border-[#59a185]; }
+  .admin-loading { @apply mt-6 h-56 animate-pulse rounded-2xl bg-[#eff3f0]; }
   @media (max-width: 1023px) {
     .auth-page { display: block !important; width: 100vw; overflow-x: hidden; }
     .auth-panel { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 2rem 1.5rem 3rem !important; }
