@@ -82,11 +82,23 @@ describe("report router", () => {
   });
 
   it("marks an owned report as recovered with the current user's identity", async () => {
-    vi.mocked(db.markReportRecovered).mockResolvedValue({ id: 12, status: "recovered" } as never);
+    const recovered = { id: 12, status: "recovered" } as never;
+    vi.mocked(db.markReportRecovered).mockResolvedValue(recovered);
     const caller = reportRouter.createCaller(context());
 
     await expect(caller.recover({ id: 12 })).resolves.toMatchObject({ id: 12, status: "recovered" });
     expect(db.markReportRecovered).toHaveBeenCalledWith(12, 7, false);
+    expect(db.createPotentialMatches).toHaveBeenCalledWith(recovered);
+  });
+
+  it("recalculates potential matches after updating an open report", async () => {
+    const updated = { id: 12, status: "open", reportType: "lost" } as never;
+    vi.mocked(db.updateReport).mockResolvedValue(updated);
+    vi.mocked(db.createPotentialMatches).mockResolvedValue([]);
+    const caller = reportRouter.createCaller(context());
+
+    await expect(caller.update(updatePayload)).resolves.toMatchObject({ id: 12, matches: [] });
+    expect(db.createPotentialMatches).toHaveBeenCalledWith(updated);
   });
 
   it("rejects editing a report the current user does not own", async () => {

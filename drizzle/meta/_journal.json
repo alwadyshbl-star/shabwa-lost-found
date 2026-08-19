@@ -22,6 +22,13 @@
       "when": 1787161156848,
       "tag": "0002_flaky_nightshade",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787165658123,
+      "tag": "0003_high_clint_barton",
+      "breakpoints": true
     }
   ]
 }

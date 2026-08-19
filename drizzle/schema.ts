@@ -96,6 +96,7 @@ export const notifications = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     userId: int("userId").notNull(),
     reportId: int("reportId"),
+    matchReportId: int("matchReportId"),
     type: mysqlEnum("type", ["match", "system"]).default("system").notNull(),
     title: varchar("title", { length: 160 }).notNull(),
     message: text("message").notNull(),
@@ -104,6 +105,7 @@ export const notifications = mysqlTable(
   },
   table => ({
     userIdx: index("notifications_user_idx").on(table.userId, table.isRead, table.createdAt),
+    uniqueMatchNotice: uniqueIndex("notifications_match_unique").on(table.userId, table.reportId, table.matchReportId),
   }),
 );
 

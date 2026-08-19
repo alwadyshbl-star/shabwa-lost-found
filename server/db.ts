@@ -234,6 +234,25 @@ export async function getReportStats() {
 export async function createPotentialMatches(sourceReport: Report) {
   const db = await getDb();
   if (!db) return [];
+  const removePair = async (sourceReportId: number, candidateReportId: number) => {
+    await db.delete(reportMatches).where(or(
+      and(eq(reportMatches.sourceReportId, sourceReportId), eq(reportMatches.candidateReportId, candidateReportId)),
+      and(eq(reportMatches.sourceReportId, candidateReportId), eq(reportMatches.candidateReportId, sourceReportId)),
+    ));
+    await db.delete(notifications).where(or(
+      and(eq(notifications.reportId, sourceReportId), eq(notifications.matchReportId, candidateReportId)),
+      and(eq(notifications.reportId, candidateReportId), eq(notifications.matchReportId, sourceReportId)),
+    ));
+  };
+  const existingPairs = await db
+    .select({ sourceReportId: reportMatches.sourceReportId, candidateReportId: reportMatches.candidateReportId })
+    .from(reportMatches)
+    .where(or(eq(reportMatches.sourceReportId, sourceReport.id), eq(reportMatches.candidateReportId, sourceReport.id)));
+
+  if (sourceReport.status !== "open" || sourceReport.moderationStatus !== "published" || !sourceReport.isPublic) {
+    for (const pair of existingPairs) await removePair(pair.sourceReportId, pair.candidateReportId);
+    return [];
+  }
   const oppositeType = sourceReport.reportType === "lost" ? "found" : "lost";
   const candidates = await db
     .select()
@@ -254,19 +273,41 @@ export async function createPotentialMatches(sourceReport: Report) {
     .sort((first, second) => second.score - first.score)
     .slice(0, 8);
 
+  const validCandidateIds = new Set(matches.map(match => match.candidate.id));
+  for (const pair of existingPairs) {
+    const otherReportId = pair.sourceReportId === sourceReport.id ? pair.candidateReportId : pair.sourceReportId;
+    if (!validCandidateIds.has(otherReportId)) await removePair(pair.sourceReportId, pair.candidateReportId);
+  }
+
   for (const match of matches) {
     await db
       .insert(reportMatches)
       .values({ sourceReportId: sourceReport.id, candidateReportId: match.candidate.id, score: match.score })
       .onDuplicateKeyUpdate({ set: { score: match.score } });
     if (match.candidate.userId !== sourceReport.userId) {
-      await db.insert(notifications).values({
-        userId: match.candidate.userId,
-        reportId: match.candidate.id,
-        type: "match",
-        title: "تطابق محتمل جديد",
-        message: `ظهر بلاغ جديد قد يتوافق مع بلاغك «${match.candidate.name}».`,
-      });
+      const notices = [
+        { userId: sourceReport.userId, reportId: sourceReport.id, matchReportId: match.candidate.id, ownName: sourceReport.name },
+        { userId: match.candidate.userId, reportId: match.candidate.id, matchReportId: sourceReport.id, ownName: match.candidate.name },
+      ];
+      for (const notice of notices) {
+        await db
+          .insert(notifications)
+          .values({
+            userId: notice.userId,
+            reportId: notice.reportId,
+            matchReportId: notice.matchReportId,
+            type: "match",
+            title: "لديك تطابق محتمل",
+            message: `وجدنا تطابقًا محتملًا بنسبة ${match.score}% لبلاغك «${notice.ownName}». راجع التفاصيل قبل التواصل.`,
+          })
+          .onDuplicateKeyUpdate({
+            set: {
+              title: "لديك تطابق محتمل",
+              message: `وجدنا تطابقًا محتملًا بنسبة ${match.score}% لبلاغك «${notice.ownName}». راجع التفاصيل قبل التواصل.`,
+              isRead: false,
+            },
+          });
+      }
     }
   }
   return matches;
@@ -275,12 +316,19 @@ export async function createPotentialMatches(sourceReport: Report) {
 export async function getMatchesForReport(reportId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db
+  const sourceMatches = await db
     .select({ id: reportMatches.id, score: reportMatches.score, status: reportMatches.status, candidate: reports })
     .from(reportMatches)
-    .innerJoin(reports, eq(reportMatches.candidateReportId, reports.id))
+    .innerJoin(reports, eq(reports.id, reportMatches.candidateReportId))
     .where(eq(reportMatches.sourceReportId, reportId))
     .orderBy(desc(reportMatches.score));
+  const candidateMatches = await db
+    .select({ id: reportMatches.id, score: reportMatches.score, status: reportMatches.status, candidate: reports })
+    .from(reportMatches)
+    .innerJoin(reports, eq(reports.id, reportMatches.sourceReportId))
+    .where(eq(reportMatches.candidateReportId, reportId))
+    .orderBy(desc(reportMatches.score));
+  return [...sourceMatches, ...candidateMatches].sort((first, second) => second.score - first.score);
 }
 
 export async function flagMatchForReview(reportId: number, candidateReportId: number) {
@@ -289,8 +337,29 @@ export async function flagMatchForReview(reportId: number, candidateReportId: nu
   await db
     .update(reportMatches)
     .set({ status: "reported" })
-    .where(and(eq(reportMatches.sourceReportId, reportId), eq(reportMatches.candidateReportId, candidateReportId)));
+    .where(or(
+      and(eq(reportMatches.sourceReportId, reportId), eq(reportMatches.candidateReportId, candidateReportId)),
+      and(eq(reportMatches.sourceReportId, candidateReportId), eq(reportMatches.candidateReportId, reportId)),
+    ));
   return true;
+}
+
+export async function listNotificationsWithMatchSummary(userId: number) {
+  const items = await listNotificationsByUser(userId);
+  const db = await getDb();
+  if (!db) return items.map(item => ({ ...item, matchScore: null }));
+  return Promise.all(items.map(async item => {
+    if (item.type !== "match" || !item.reportId || !item.matchReportId) return { ...item, matchScore: null };
+    const scoreRows = await db
+      .select({ score: reportMatches.score })
+      .from(reportMatches)
+      .where(or(
+        and(eq(reportMatches.sourceReportId, item.reportId), eq(reportMatches.candidateReportId, item.matchReportId)),
+        and(eq(reportMatches.sourceReportId, item.matchReportId), eq(reportMatches.candidateReportId, item.reportId)),
+      ))
+      .limit(1);
+    return { ...item, matchScore: scoreRows[0]?.score ?? null };
+  }));
 }
 
 export async function listAllReports() {

@@ -113,7 +113,8 @@ export const reportRouter = router({
         contactPhone: input.contactPhone || null,
       });
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "لا يمكن تعديل هذا البلاغ." });
-      return updated;
+      const matches = updated.status === "open" ? await db.createPotentialMatches(updated) : [];
+      return { ...updated, matches };
     }),
 
   recover: protectedProcedure
@@ -121,6 +122,7 @@ export const reportRouter = router({
     .mutation(async ({ ctx, input }) => {
       const updated = await db.markReportRecovered(input.id, ctx.user.id, ctx.user.role === "admin");
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على البلاغ." });
+      await db.createPotentialMatches(updated);
       return updated;
     }),
 
@@ -152,6 +154,7 @@ export const reportRouter = router({
       requireAdmin(ctx.user.role);
       const updated = await db.updateModerationStatus(input.id, input.moderationStatus);
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "لم يتم العثور على البلاغ." });
+      if (updated) await db.createPotentialMatches(updated);
       return updated;
     }),
 

@@ -196,6 +196,8 @@
   .admin-user-avatar { @apply grid h-10 w-10 place-items-center rounded-xl bg-[#0d5a4d] font-display font-black text-white; }
   .admin-role-select { @apply h-9 rounded-lg border border-[#dbe6df] bg-white px-2 text-xs font-bold text-[#345448] outline-none focus:border-[#59a185]; }
   .admin-loading { @apply mt-6 h-56 animate-pulse rounded-2xl bg-[#eff3f0]; }
+  .match-notice-label { @apply rounded-full bg-[#e1f2e9] px-2.5 py-1 text-[11px] font-extrabold text-[#0d644f]; }
+  .match-notice-score { @apply rounded-full bg-[#fbf0db] px-2.5 py-1 text-[11px] font-extrabold text-[#93621c]; }
   @media (max-width: 1023px) {
     .auth-page { display: block !important; width: 100vw; overflow-x: hidden; }
     .auth-panel { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 2rem 1.5rem 3rem !important; }
