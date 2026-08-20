@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
-import { Bell, ClipboardList, Eye, HeartHandshake, LayoutDashboard, Menu, Search, ShieldCheck, X } from "lucide-react";
+import { Bell, ClipboardList, Code2, Eye, HeartHandshake, LayoutDashboard, Menu, Phone, Search, ShieldCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -160,6 +160,18 @@ export default function AppFrame({ children }: AppFrameProps) {
           <div className="text-sm leading-8 text-[#657168]">
             <p className="mb-2 font-bold text-[#273630]">الثقة والخصوصية</p>
             <p>لا تظهر بيانات التواصل إلا في صفحة البلاغ، ولا تكفي المطابقة وحدها لإثبات الملكية.</p>
+          </div>
+        </div>
+        <div className="border-t border-[#dfe4de] bg-white/35">
+          <div className="container flex flex-col gap-3 py-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex items-center gap-2 text-[#5e6c64]">
+              <Code2 size={17} className="text-[#28705f]" />
+              <span>مطوّر المنصة: <strong className="font-extrabold text-[#24473c]">المهندس صالح سالم باحميد</strong></span>
+            </p>
+            <a href="tel:+967776960455" dir="ltr" className="inline-flex w-fit items-center gap-2 rounded-xl bg-[#e4f1eb] px-3 py-2 font-bold text-[#0d5a4d] transition-colors hover:bg-[#d4e9df]" aria-label="التواصل مع مطور المنصة على الرقم 00967 776960455">
+              <Phone size={16} />
+              <span>00967 776 960 455</span>
+            </a>
           </div>
         </div>
       </footer>
