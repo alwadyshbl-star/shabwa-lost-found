@@ -12,10 +12,10 @@ const moderationStatuses = ["published", "under_review"] as const;
 const reportInput = z.object({
   reportType: z.enum(reportTypes),
   itemKind: z.enum(itemKinds),
-  name: z.string().trim().min(2).max(160),
-  description: z.string().trim().min(8).max(2_000),
-  incidentDate: z.string().min(8).max(32),
-  location: z.string().trim().min(2).max(240),
+  name: z.string().trim().min(2, "اكتب عنوان البلاغ من حرفين على الأقل.").max(160, "عنوان البلاغ طويل جدًا."),
+  description: z.string().trim().min(8, "اكتب وصفًا أوضح من 8 أحرف على الأقل.").max(2_000, "الوصف طويل جدًا."),
+  incidentDate: z.string().min(8, "اختر تاريخ الحادثة.").max(32, "تاريخ الحادثة غير صالح."),
+  location: z.string().trim().min(2, "اكتب موقع الحادثة من حرفين على الأقل.").max(240, "الموقع طويل جدًا."),
   imageUrl: z.string().url().max(1_024).optional().or(z.literal("")),
   contactName: z.string().trim().max(120).optional().or(z.literal("")),
   contactPhone: z.string().trim().max(32).optional().or(z.literal("")),
@@ -42,18 +42,8 @@ function decodeImage(dataUrl: string, mimeType: "image/jpeg" | "image/png" | "im
 export const reportRouter = router({
   stats: publicProcedure.query(() => db.getReportStats()),
 
-  uploadImage: protectedProcedure
-    .input(
-      z.object({
-        dataUrl: z.string().min(32).max(6_000_000),
-        mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const extension = input.mimeType === "image/jpeg" ? "jpg" : input.mimeType === "image/png" ? "png" : "webp";
-      const buffer = decodeImage(input.dataUrl, input.mimeType);
-      const uploaded = await storagePut(`reports/${ctx.user.id}/${Date.now()}.${extension}`, buffer, input.mimeType);
-      return { url: uploaded.url };
+  uploadImage: protectedProcedure.mutation(() => {
+      throw new TRPCError({ code: "NOT_IMPLEMENTED", message: "رفع الصور قيد التطوير حاليًا. يمكنك نشر البلاغ دون صورة." });
     }),
 
   list: publicProcedure

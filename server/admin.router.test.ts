@@ -24,7 +24,10 @@ function context(role: "user" | "admin"): TrpcContext {
 describe("admin router authorization", () => {
   it("rejects dashboard data for a normal user", async () => {
     const caller = appRouter.createCaller(context("user"));
-    await expect(caller.admin.stats()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.admin.stats()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      message: "هذه العملية متاحة للمشرف فقط.",
+    });
   });
 
   it("returns dashboard data to an administrator", async () => {

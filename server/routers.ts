@@ -17,7 +17,7 @@ export const appRouter = router({
   system: systemRouter,
   auth: router({
     register: publicProcedure
-      .input(z.object({ name: z.string().trim().min(2).max(120), email: z.string().trim().email().max(320), password: z.string().min(8).max(128), role: z.enum(["user", "admin"]).default("user"), adminSetupCode: z.string().max(256).optional() }))
+      .input(z.object({ name: z.string().trim().min(2, "اكتب الاسم من حرفين على الأقل.").max(120, "الاسم طويل جدًا."), email: z.string().trim().email("أدخل بريدًا إلكترونيًا صحيحًا.").max(320, "البريد الإلكتروني طويل جدًا."), password: z.string().min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل.").max(128, "كلمة المرور طويلة جدًا."), role: z.enum(["user", "admin"]).default("user"), adminSetupCode: z.string().max(256, "رمز التفعيل طويل جدًا.").optional() }))
       .mutation(async ({ ctx, input }) => {
         const requestedAdmin = input.role === "admin";
         const expectedCode = Buffer.from(ENV.adminSetupCode);
@@ -36,7 +36,7 @@ export const appRouter = router({
         return user;
       }),
     login: publicProcedure
-      .input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(1).max(128) }))
+      .input(z.object({ email: z.string().trim().email("أدخل بريدًا إلكترونيًا صحيحًا.").max(320, "البريد الإلكتروني طويل جدًا."), password: z.string().min(1, "اكتب كلمة المرور أولًا.").max(128, "كلمة المرور طويلة جدًا.") }))
       .mutation(async ({ ctx, input }) => {
         const account = await db.getLocalAccountByEmail(normalizeEmail(input.email));
         const valid = account ? await verifyPassword(input.password, account.passwordHash) : false;
@@ -47,7 +47,7 @@ export const appRouter = router({
         return account.user;
       }),
     setPassword: protectedProcedure
-      .input(z.object({ email: z.string().trim().email().max(320), password: z.string().min(8).max(128) }))
+      .input(z.object({ email: z.string().trim().email("أدخل بريدًا إلكترونيًا صحيحًا.").max(320, "البريد الإلكتروني طويل جدًا."), password: z.string().min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل.").max(128, "كلمة المرور طويلة جدًا.") }))
       .mutation(async ({ ctx, input }) => {
         const email = normalizeEmail(input.email);
         if (ctx.user.email && normalizeEmail(ctx.user.email) !== email) {

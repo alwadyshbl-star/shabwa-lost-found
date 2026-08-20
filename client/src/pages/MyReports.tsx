@@ -3,6 +3,7 @@ import AppFrame from "@/components/AppFrame";
 import { StatusPill } from "@/components/ReportCard";
 import { Button } from "@/components/ui/button";
 import { formatDate, reportTypeLabels } from "@/lib/report-utils";
+import { getFriendlyErrorMessage } from "@/lib/error-utils";
 import { trpc } from "@/lib/trpc";
 import {
   AlertCircle,
@@ -44,7 +45,7 @@ export default function MyReports() {
       await reports.refetch();
       toast.success("تم إغلاق البلاغ بالحالة «تم الاسترجاع».");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "تعذر تحديث البلاغ.");
+      toast.error(getFriendlyErrorMessage(error, "تعذر تحديث البلاغ. حاول مرة أخرى."));
     }
   };
 

@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import AppFrame from "@/components/AppFrame";
 import { Button } from "@/components/ui/button";
 import { formatDate, reportTypeLabels, statusLabels } from "@/lib/report-utils";
+import { getFriendlyErrorMessage } from "@/lib/error-utils";
 import { trpc } from "@/lib/trpc";
 import { Activity, AlertCircle, BarChart3, Eye, FileText, PenLine, ShieldCheck, Trash2, Users, UserRoundCog } from "lucide-react";
 import { useState } from "react";
@@ -26,21 +27,21 @@ export default function AdminDashboard() {
     try {
       await moderate.mutateAsync({ id, moderationStatus });
       toast.success(moderationStatus === "published" ? "تم نشر البلاغ للعامة." : "تم إخفاء البلاغ ووضعه قيد المراجعة.");
-    } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر تحديث حالة البلاغ."); }
+    } catch (error) { toast.error(getFriendlyErrorMessage(error, "تعذر تحديث حالة البلاغ. حاول مرة أخرى.")); }
   };
 
   const removeReport = async (id: number) => {
     if (!window.confirm("سيُحذف البلاغ والمطابقات المرتبطة به نهائيًا. هل تريد المتابعة؟")) return;
-    try { await deleteReport.mutateAsync({ reportId: id }); } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حذف البلاغ."); }
+    try { await deleteReport.mutateAsync({ reportId: id }); } catch (error) { toast.error(getFriendlyErrorMessage(error, "تعذر حذف البلاغ. حاول مرة أخرى.")); }
   };
 
   const changeRole = async (userId: number, role: "user" | "admin") => {
-    try { await setUserRole.mutateAsync({ userId, role }); } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر تحديث الصلاحية."); }
+    try { await setUserRole.mutateAsync({ userId, role }); } catch (error) { toast.error(getFriendlyErrorMessage(error, "تعذر تحديث الصلاحية. حاول مرة أخرى.")); }
   };
 
   const removeUser = async (userId: number, name: string | null) => {
     if (!window.confirm(`سيُحذف حساب ${name || "هذا المستخدم"} وكل بلاغاته ومطابقاته نهائيًا. هل تريد المتابعة؟`)) return;
-    try { await deleteUser.mutateAsync({ userId }); } catch (error) { toast.error(error instanceof Error ? error.message : "تعذر حذف المستخدم."); }
+    try { await deleteUser.mutateAsync({ userId }); } catch (error) { toast.error(getFriendlyErrorMessage(error, "تعذر حذف المستخدم. حاول مرة أخرى.")); }
   };
 
   if (!loading && user?.role !== "admin") return <AppFrame><section className="container py-20"><div className="empty-state mx-auto max-w-xl"><ShieldCheck size={28} /><h1>هذه الصفحة للمشرف فقط</h1><p>تتوفر إدارة بيانات المنصة للحسابات المصرح لها بالإشراف.</p></div></section></AppFrame>;

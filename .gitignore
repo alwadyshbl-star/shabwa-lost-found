@@ -108,6 +108,9 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+.ui-e2e-artifacts/
+.ui-e2e-chrome-profile/
+.ui-e2e-state.json
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
