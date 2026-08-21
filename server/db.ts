@@ -73,6 +73,27 @@ export async function getLocalAccountByEmail(email: string) {
   return result[0];
 }
 
+export async function getLocalAccountByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select({ user: users, passwordHash: localAccounts.passwordHash })
+    .from(localAccounts)
+    .innerJoin(users, eq(localAccounts.userId, users.id))
+    .where(eq(localAccounts.userId, userId))
+    .limit(1);
+  return result[0];
+}
+
+export async function updateLocalPasswordHash(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) return false;
+  const credential = await getLocalAccountByUserId(userId);
+  if (!credential) return false;
+  await db.update(localAccounts).set({ passwordHash }).where(eq(localAccounts.userId, userId));
+  return true;
+}
+
 /** Creates a local credential, reusing a legacy user with the same email when available. */
 export async function createLocalAccount(input: { name: string; email: string; passwordHash: string; role: "user" | "admin" }) {
   const db = await getDb();
@@ -450,7 +471,7 @@ export async function deleteReportAsAdmin(reportId: number) {
   return true;
 }
 
-export async function deleteUserAsAdmin(userId: number) {
+export async function deleteUserAccount(userId: number) {
   const db = await getDb();
   if (!db) return false;
   await db.transaction(async tx => {
@@ -466,4 +487,8 @@ export async function deleteUserAsAdmin(userId: number) {
     await tx.delete(users).where(eq(users.id, userId));
   });
   return true;
+}
+
+export async function deleteUserAsAdmin(userId: number) {
+  return deleteUserAccount(userId);
 }

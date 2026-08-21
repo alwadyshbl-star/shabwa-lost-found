@@ -111,6 +111,8 @@ temp/
 .ui-e2e-artifacts/
 .ui-e2e-chrome-profile/
 .ui-e2e-state.json
+.settings-ui-e2e-artifacts/
+.settings-ui-e2e-profile/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json

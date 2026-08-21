@@ -1,6 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
-import { Bell, ClipboardList, Code2, Eye, HeartHandshake, LayoutDashboard, Mail, Menu, Phone, Search, ShieldCheck, X } from "lucide-react";
+import { Bell, ClipboardList, Code2, Eye, HeartHandshake, LayoutDashboard, Mail, Menu, Phone, Search, Settings, ShieldCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,9 @@ export default function AppFrame({ children }: AppFrameProps) {
                 <Link href="/my-reports" className="hidden rounded-full bg-[#e8f1ee] px-4 py-2 text-sm font-bold text-[#0d5a4d] transition-colors hover:bg-[#dcebe5] xl:block">
                   {user?.name || "حسابي"}
                 </Link>
+                <Link href="/settings" className="icon-button" aria-label="إعدادات الحساب">
+                  <Settings size={19} />
+                </Link>
                 <Button variant="ghost" className="h-9 px-2 text-xs font-bold text-[#69756d]" onClick={logout}>
                   خروج
                 </Button>
@@ -127,6 +130,7 @@ export default function AppFrame({ children }: AppFrameProps) {
               {isAuthenticated ? (
                 <>
                   <Link href="/notifications" onClick={() => setMobileOpen(false)} className="nav-link"><Bell size={17} />الإشعارات</Link>
+                  <Link href="/settings" onClick={() => setMobileOpen(false)} className="nav-link"><Settings size={17} />إعدادات الحساب</Link>
                   {user?.role === "admin" && <Link href="/admin" onClick={() => setMobileOpen(false)} className="nav-link"><ShieldCheck size={17} />لوحة المشرف</Link>}
                   <Button variant="ghost" className="justify-start px-3 font-bold" onClick={logout}>تسجيل الخروج</Button>
                 </>

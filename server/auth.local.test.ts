@@ -4,8 +4,11 @@ import type { TrpcContext } from "./_core/context";
 vi.mock("./db", () => ({
   createLocalAccount: vi.fn(),
   getLocalAccountByEmail: vi.fn(),
+  getLocalAccountByUserId: vi.fn(),
   setLocalPasswordForUser: vi.fn(),
+  updateLocalPasswordHash: vi.fn(),
   updateLocalLastSignedIn: vi.fn(),
+  deleteUserAccount: vi.fn(),
 }));
 
 vi.mock("./localAuth", () => ({
@@ -31,15 +34,17 @@ const user = {
   lastSignedIn: new Date(),
 };
 
-function context(): { ctx: TrpcContext; cookies: Array<{ name: string; value: string }> } {
+function context(): { ctx: TrpcContext; cookies: Array<{ name: string; value: string }>; clearedCookies: string[] } {
   const cookies: Array<{ name: string; value: string }> = [];
+  const clearedCookies: string[] = [];
   return {
     ctx: {
       user: null,
       req: { protocol: "https", headers: {} } as TrpcContext["req"],
-      res: { cookie: (name: string, value: string) => cookies.push({ name, value }), clearCookie: vi.fn() } as TrpcContext["res"],
+      res: { cookie: (name: string, value: string) => cookies.push({ name, value }), clearCookie: (name: string) => clearedCookies.push(name) } as TrpcContext["res"],
     },
     cookies,
+    clearedCookies,
   };
 }
 
@@ -105,6 +110,44 @@ describe("local auth router", () => {
 
     const authenticatedCaller = appRouter.createCaller({ ...ctx, user });
     await expect(authenticatedCaller.auth.me()).resolves.toMatchObject({ id: 41, email: "saleh@example.com" });
+  });
+
+  it("changes a local password only after verifying the current password", async () => {
+    vi.mocked(db.getLocalAccountByUserId).mockResolvedValue({ user, passwordHash: await hashPassword("AhtarPass2026") });
+    vi.mocked(db.updateLocalPasswordHash).mockResolvedValue(true);
+    const { ctx } = context();
+    const caller = appRouter.createCaller({ ...ctx, user });
+
+    await expect(caller.auth.changePassword({ currentPassword: "AhtarPass2026", newPassword: "NewAhtarPass2026" })).resolves.toEqual({ success: true });
+    expect(db.updateLocalPasswordHash).toHaveBeenCalledWith(41, expect.stringMatching(/^scrypt\$/));
+  });
+
+  it("rejects password changes when the current password is wrong", async () => {
+    vi.mocked(db.getLocalAccountByUserId).mockResolvedValue({ user, passwordHash: await hashPassword("AhtarPass2026") });
+    const { ctx } = context();
+    const caller = appRouter.createCaller({ ...ctx, user });
+
+    await expect(caller.auth.changePassword({ currentPassword: "wrong-password", newPassword: "NewAhtarPass2026" })).rejects.toThrow("كلمة المرور الحالية غير صحيحة.");
+    expect(db.updateLocalPasswordHash).not.toHaveBeenCalled();
+  });
+
+  it("deletes the authenticated account only after explicit confirmation and password verification", async () => {
+    vi.mocked(db.getLocalAccountByUserId).mockResolvedValue({ user, passwordHash: await hashPassword("AhtarPass2026") });
+    vi.mocked(db.deleteUserAccount).mockResolvedValue(true);
+    const { ctx, clearedCookies } = context();
+    const caller = appRouter.createCaller({ ...ctx, user });
+
+    await expect(caller.auth.deleteAccount({ password: "AhtarPass2026", confirmation: "حذف حسابي" })).resolves.toEqual({ success: true });
+    expect(db.deleteUserAccount).toHaveBeenCalledWith(41);
+    expect(clearedCookies).toEqual([COOKIE_NAME]);
+  });
+
+  it("protects account deletion when the confirmation phrase is missing", async () => {
+    const { ctx } = context();
+    const caller = appRouter.createCaller({ ...ctx, user });
+
+    await expect(caller.auth.deleteAccount({ password: "AhtarPass2026", confirmation: "حذف" })).rejects.toThrow("اكتب «حذف حسابي» لتأكيد الحذف النهائي.");
+    expect(db.deleteUserAccount).not.toHaveBeenCalled();
   });
 
   it("blocks password linking when no authenticated user is present", async () => {

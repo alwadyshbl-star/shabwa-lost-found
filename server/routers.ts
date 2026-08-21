@@ -61,6 +61,35 @@ export const appRouter = router({
         ctx.res.cookie(COOKIE_NAME, token, { ...getSessionCookieOptions(ctx.req), maxAge: LOCAL_SESSION_MAX_AGE_MS });
         return user;
       }),
+    changePassword: protectedProcedure
+      .input(z.object({ currentPassword: z.string().min(1, "اكتب كلمة المرور الحالية أولًا."), newPassword: z.string().min(8, "كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.").max(128, "كلمة المرور الجديدة طويلة جدًا.") }))
+      .mutation(async ({ ctx, input }) => {
+        const account = await db.getLocalAccountByUserId(ctx.user.id);
+        if (!account) throw new TRPCError({ code: "BAD_REQUEST", message: "لا توجد كلمة مرور محلية لهذا الحساب حاليًا." });
+        if (!await verifyPassword(input.currentPassword, account.passwordHash)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "كلمة المرور الحالية غير صحيحة." });
+        }
+        const updated = await db.updateLocalPasswordHash(ctx.user.id, await hashPassword(input.newPassword));
+        if (!updated) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذر تغيير كلمة المرور حاليًا. حاول مرة أخرى." });
+        return { success: true } as const;
+      }),
+    deleteAccount: protectedProcedure
+      .input(z.object({ password: z.string().min(1, "اكتب كلمة المرور لتأكيد الحذف."), confirmation: z.string().trim() }))
+      .mutation(async ({ ctx, input }) => {
+        if (input.confirmation !== "حذف حسابي") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "اكتب «حذف حسابي» لتأكيد الحذف النهائي." });
+        }
+        const account = await db.getLocalAccountByUserId(ctx.user.id);
+        if (!account) throw new TRPCError({ code: "BAD_REQUEST", message: "لا يمكن حذف هذا الحساب عبر كلمة المرور المحلية حاليًا." });
+        if (!await verifyPassword(input.password, account.passwordHash)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "كلمة المرور غير صحيحة. لم يُحذف الحساب." });
+        }
+        const deleted = await db.deleteUserAccount(ctx.user.id);
+        if (!deleted) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "تعذر حذف الحساب حاليًا. حاول مرة أخرى." });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+        return { success: true } as const;
+      }),
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
