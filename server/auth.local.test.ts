@@ -76,12 +76,21 @@ describe("local auth router", () => {
     await expect(caller.auth.register({ name: "مدير", email: "blocked@example.com", password: "AhtarPass2026", role: "admin", adminSetupCode: "incorrect-code" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("rejects a wrong password without creating a session", async () => {
+  it("explains that an email has no registered local account", async () => {
+    vi.mocked(db.getLocalAccountByEmail).mockResolvedValue(null);
+    const { ctx, cookies } = context();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.auth.login({ email: "unknown@example.com", password: "AhtarPass2026" })).rejects.toThrow("لا يوجد حساب مرتبط بهذا البريد الإلكتروني. تحقق من البريد أو أنشئ حسابًا جديدًا.");
+    expect(cookies).toEqual([]);
+  });
+
+  it("explains that a registered account has an incorrect password without creating a session", async () => {
     vi.mocked(db.getLocalAccountByEmail).mockResolvedValue({ user, passwordHash: await hashPassword("AhtarPass2026") });
     const { ctx, cookies } = context();
     const caller = appRouter.createCaller(ctx);
 
-    await expect(caller.auth.login({ email: "saleh@example.com", password: "wrong-password" })).rejects.toThrow("البريد الإلكتروني أو كلمة المرور غير صحيحة.");
+    await expect(caller.auth.login({ email: "saleh@example.com", password: "wrong-password" })).rejects.toThrow("كلمة المرور غير صحيحة. تأكد من كتابتها ثم حاول مجددًا.");
     expect(cookies).toEqual([]);
   });
 

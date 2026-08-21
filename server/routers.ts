@@ -39,8 +39,9 @@ export const appRouter = router({
       .input(z.object({ email: z.string().trim().email("أدخل بريدًا إلكترونيًا صحيحًا.").max(320, "البريد الإلكتروني طويل جدًا."), password: z.string().min(1, "اكتب كلمة المرور أولًا.").max(128, "كلمة المرور طويلة جدًا.") }))
       .mutation(async ({ ctx, input }) => {
         const account = await db.getLocalAccountByEmail(normalizeEmail(input.email));
-        const valid = account ? await verifyPassword(input.password, account.passwordHash) : false;
-        if (!account || !valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "البريد الإلكتروني أو كلمة المرور غير صحيحة." });
+        if (!account) throw new TRPCError({ code: "UNAUTHORIZED", message: "لا يوجد حساب مرتبط بهذا البريد الإلكتروني. تحقق من البريد أو أنشئ حسابًا جديدًا." });
+        const valid = await verifyPassword(input.password, account.passwordHash);
+        if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "كلمة المرور غير صحيحة. تأكد من كتابتها ثم حاول مجددًا." });
         await db.updateLocalLastSignedIn(account.user.id);
         const token = await createLocalSessionToken(account.user.id);
         ctx.res.cookie(COOKIE_NAME, token, { ...getSessionCookieOptions(ctx.req), maxAge: LOCAL_SESSION_MAX_AGE_MS });
