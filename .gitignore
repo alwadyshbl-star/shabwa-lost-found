@@ -113,6 +113,8 @@ temp/
 .ui-e2e-state.json
 .settings-ui-e2e-artifacts/
 .settings-ui-e2e-profile/
+.public-registration-ui-e2e-artifacts/
+.public-registration-ui-e2e-profile/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
